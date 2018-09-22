@@ -1,27 +1,45 @@
 #-*-coding:utf-8-*-
 
-import os, sys
-
+import os, sys, re
+import ConfigParser
 from PySide import QtCore, QtGui
+
+trayMenuList = []
 
 class TrayMenu(QtGui.QSystemTrayIcon):
     def __init__(self, parent=None):
         QtGui.QSystemTrayIcon.__init__(self, parent)
 
-        filePath = os.path.abspath(__file__+"/../")
-        self.setIcon(QtGui.QIcon("%s/icon/trayMenuIcon.png"%filePath))
-        self.trayMenuItem = TrayMenuItem()
-        self.setContextMenu(self.trayMenuItem)
+        self.filePath = os.path.abspath(__file__+"/../")
+        self.setIcon(QtGui.QIcon("%s/icon/trayMenuIcon.png"%self.filePath))
+        # self.setContextMenu(self.trayMenuItem) # init context menu-right
 
-        self.activated.connect(self.leftClick)
+        self.activated.connect(self.showMenu)
 
-    def leftClick(self, value):
-        if value == self.Trigger:
+    def showMenu(self, value):
+
+        global trayMenuList
+        config = ConfigParser.ConfigParser()
+        config.read("%s/config.ini"%self.filePath)
+
+        configDic = dict(config.items('menu'))
+        trayMenuList =  configDic.keys()
+        trayMenuList.sort()
+
+        # menu setting
+        if value == self.Trigger: #left mouse
+            self.trayMenuItem = TrayMenuItem()
             self.trayMenuItem.exec_(QtGui.QCursor.pos())
+        if value == self.Context: #right mouse
+            self.trayMenuItem = TrayMenuItem()
+            self.trayMenuItem.exec_(QtGui.QCursor.pos())
+
 
 class TrayMenuItem(QtGui.QMenu):
     def __init__(self, parent=None):
         QtGui.QMenu.__init__(self, parent)
+
+        print trayMenuList
 
         menu1V="http://act1"
         self.act1 = QtGui.QAction("menu1", self)
@@ -38,6 +56,7 @@ class TrayMenuItem(QtGui.QMenu):
 
     def menuAct(self, menuV):
         print menuV
+
 
 if __name__=="__main__":
     trayMenuApp = QtGui.QApplication(sys.argv)
