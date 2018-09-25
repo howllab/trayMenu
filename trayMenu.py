@@ -1,7 +1,8 @@
 #-*-coding:utf-8-*-
 
 import os, sys
-import ConfigParser
+import subprocess
+import ConfigParser, codecs
 from PySide import QtCore, QtGui
 
 class TrayMenu(QtGui.QSystemTrayIcon):
@@ -30,7 +31,7 @@ class TrayMenu(QtGui.QSystemTrayIcon):
     def makeMenu(self, menuObj):
         # get config file
         self.trayConfig=ConfigParser.ConfigParser()
-        self.trayConfig.read("%s/config.ini"%self.filePath)
+        self.trayConfig.readfp(codecs.open("%s/config.ini"%self.filePath, 'r', encoding='utf-8'))
         trayMenuDic, trayMenuKeys = self.getConfig("menu")
 
         # menu loop
@@ -39,7 +40,8 @@ class TrayMenu(QtGui.QSystemTrayIcon):
             menuName = "_".join(nameV.split("_")[1:])
 
             # create sub menu
-            if menuName == "submenu":
+            checkSubmenu = menuCmd.split("_")[-1]
+            if checkSubmenu == "submenu":
                 # menuCmd is submenu section name
                 subMenu = QtGui.QMenu(menuName)
                 traySubMenuDic, traySubMenuKeys = self.getConfig(menuCmd)
@@ -65,7 +67,7 @@ class TrayMenu(QtGui.QSystemTrayIcon):
         typeV.addAction(act)
 
     def runCmd(self, menuCmd):
-        os.system("%s &"%menuCmd)
+        subprocess.Popen(menuCmd, shell=True)
         print menuCmd
 
 if __name__=="__main__":
