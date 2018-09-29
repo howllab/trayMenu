@@ -5,6 +5,7 @@ t branch workflow
 # Atutostart
 ```
 mkdir ~/.config/autostart
+vi trayMenu.desktop - Edit Exec Path
 cp -v trayMenu.desktop ~/.config/autostart
 ```
 

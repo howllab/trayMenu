@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Exec=python /home/sj/git/trayMenu/trayMenu.py
+Hidden=false
+NoDisplay=false
+X-GNOME-Autostart-enabled=true
+Name[ko_KR]=trayMenu
+Name=trayMenu
+Comment[ko_KR]=trayMenu
+Comment=trayMenu
