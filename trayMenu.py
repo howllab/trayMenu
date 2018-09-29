@@ -1,43 +1,74 @@
 #-*-coding:utf-8-*-
 
 import os, sys
-
+import subprocess
+import ConfigParser, codecs
 from PySide import QtCore, QtGui
 
 class TrayMenu(QtGui.QSystemTrayIcon):
     def __init__(self, parent=None):
         QtGui.QSystemTrayIcon.__init__(self, parent)
 
-        filePath = os.path.abspath(__file__+"/../")
-        self.setIcon(QtGui.QIcon("%s/icon/trayMenuIcon.png"%filePath))
-        self.trayMenuItem = TrayMenuItem()
-        self.setContextMenu(self.trayMenuItem)
+        self.filePath = os.path.abspath(__file__+"/../")
+        self.setIcon(QtGui.QIcon("%s/icon/trayMenuIcon.png"%self.filePath))
+        self.leftMenu = QtGui.QMenu()
+        self.rightMenu = QtGui.QMenu()
 
-        self.activated.connect(self.leftClick)
+        self.activated.connect(self.showMenu)
 
-    def leftClick(self, value):
-        if value == self.Trigger:
-            self.trayMenuItem.exec_(QtGui.QCursor.pos())
+    def showMenu(self, value):
+        self.leftMenu.clear()
+        self.rightMenu.clear()
 
-class TrayMenuItem(QtGui.QMenu):
-    def __init__(self, parent=None):
-        QtGui.QMenu.__init__(self, parent)
+        # menu exec
+        if value == self.Trigger: #left mouse
+            self.makeMenu(self.leftMenu)
+            self.leftMenu.exec_(QtGui.QCursor.pos())
+        if value == self.Context: #right mouse
+            self.makeMenu(self.rightMenu)
+            self.rightMenu.exec_(QtGui.QCursor.pos())
 
-        menu1V="http://act1"
-        self.act1 = QtGui.QAction("menu1", self)
-        self.act1.triggered.connect(lambda :self.menuAct(menu1V))
-        self.addAction(self.act1)
+    def makeMenu(self, menuObj):
+        # get config file
+        self.trayConfig=ConfigParser.ConfigParser()
+        self.trayConfig.readfp(codecs.open("%s/config.ini"%self.filePath, 'r', encoding='utf-8'))
+        trayMenuDic, trayMenuKeys = self.getConfig("menu")
 
-        submenu1V="http://subact1"
-        self.subMenu =QtGui.QMenu("submenu", self)
-        self.subact1 = QtGui.QAction("menu1", self)
-        self.subact1.triggered.connect(lambda :self.menuAct(submenu1V))
-        self.subMenu.addAction(self.subact1)
+        # menu loop
+        for nameV in trayMenuKeys:
+            menuCmd = trayMenuDic[nameV]
+            menuName = "_".join(nameV.split("_")[1:])
 
-        self.addMenu(self.subMenu)
+            # create sub menu
+            checkSubmenu = menuCmd.split("_")[-1]
+            if checkSubmenu == "submenu":
+                # menuCmd is submenu section name
+                subMenu = QtGui.QMenu(menuName, menuObj)
+                traySubMenuDic, traySubMenuKeys = self.getConfig(menuCmd)
+                for subnameV in traySubMenuKeys:
+                    submenuCmd = traySubMenuDic[subnameV]
+                    submenuName = "_".join(subnameV.split("_")[1:])
+                    self.createMenu(subMenu, submenuName, submenuCmd)
+                menuObj.addMenu(subMenu)
+            # create menu
+            else:
+                self.createMenu(menuObj, menuName, menuCmd)
 
-    def menuAct(self, menuV):
-        print menuV
+    def getConfig(self, sectionV):
+        # get item - dic, key
+        trayMenuDic = dict(self.trayConfig.items(sectionV))
+        trayMenuKeys = trayMenuDic.keys()
+        trayMenuKeys.sort()
+        return trayMenuDic, trayMenuKeys
+
+    def createMenu(self, typeV, menuName, menuCmd):
+        act = QtGui.QAction(menuName, self)
+        act.triggered.connect(lambda:self.runCmd(menuCmd))
+        typeV.addAction(act)
+
+    def runCmd(self, menuCmd):
+        subprocess.Popen(menuCmd, shell=True)
+        print menuCmd
 
 if __name__=="__main__":
     trayMenuApp = QtGui.QApplication(sys.argv)
